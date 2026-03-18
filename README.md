@@ -1,4 +1,4 @@
-# 🔗 URL Shortener (Spring Boot + UI)
+# 🔗 URL Shortener (Spring Boot)
 
 A modern URL Shortener application built using Spring Boot that converts long URLs into short, shareable links with redirection support. Includes a clean and efficient frontend UI for easy interaction.
 
