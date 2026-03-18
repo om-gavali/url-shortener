@@ -1,87 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>URL Shortener</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #f4f4f4;
-            text-align: center;
-            padding-top: 100px;
-        }
+<meta charset="UTF-8">
+<title>URL Shortener</title>
 
-        .container {
-            background: white;
-            padding: 30px;
-            width: 400px;
-            margin: auto;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px gray;
-        }
+<style>
+    body {
+        font-family: Arial;
+        background: linear-gradient(to right, #667eea, #764ba2);
+        color: white;
+        text-align: center;
+        padding: 50px;
+    }
 
-        input {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-        }
+    .card {
+        background: white;
+        color: black;
+        padding: 25px;
+        width: 420px;
+        margin: auto;
+        border-radius: 12px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
+    }
 
-        button {
-            padding: 10px 20px;
-            background: #28a745;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+    input {
+        width: 90%;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
 
-        button:hover {
-            background: #218838;
-        }
+    button {
+        padding: 10px 15px;
+        margin: 5px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        color: white;
+    }
 
-        .result {
-            margin-top: 20px;
-            font-weight: bold;
-        }
+    .btn-create { background: #28a745; }
+    .btn-update { background: #007bff; }
+    .btn-delete { background: #dc3545; }
+    .btn-copy { background: #6c757d; }
 
-        a {
-            color: blue;
-        }
-    </style>
+    button:hover {
+        opacity: 0.9;
+    }
+
+    .result {
+        margin-top: 15px;
+        font-weight: bold;
+    }
+
+    a {
+        color: blue;
+        text-decoration: none;
+    }
+</style>
 </head>
+
 <body>
 
-<div class="container">
-    <h2>🔗 URL Shortener</h2>
+<h1>🔗 URL Shortener</h1>
 
-    <input type="text" id="urlInput" placeholder="Enter URL (https://example.com)">
+<div class="card">
+
+    <input type="text" id="urlInput" placeholder="Enter URL (https://...)">
+    <input type="text" id="codeInput" placeholder="Short Code (for update/delete)">
+
     <br>
-    <button onclick="shortenUrl()">Shorten</button>
+
+    <button class="btn-create" onclick="createUrl()">Create</button>
+    <button class="btn-update" onclick="updateUrl()">Update</button>
+    <button class="btn-delete" onclick="deleteUrl()">Delete</button>
 
     <div class="result" id="result"></div>
+
 </div>
 
 <script>
-    function shortenUrl() {
-        let url = document.getElementById("urlInput").value;
 
-        fetch("http://localhost:8080/url/short", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ url: url })
-        })
-        .then(response => response.text())
-        .then(code => {
-            let shortUrl = "http://localhost:8080/url/" + code;
+let lastShortUrl = "";
 
-            document.getElementById("result").innerHTML =
-                'Short URL: <a href="' + shortUrl + '" target="_blank">' + shortUrl + '</a>';
-        })
-        .catch(error => {
-            document.getElementById("result").innerText = "Error: " + error;
-        });
+// CREATE
+function createUrl() {
+    let url = document.getElementById("urlInput").value;
+
+    if (!url.startsWith("http")) {
+        showResult("❌ Enter valid URL (http/https)", "red");
+        return;
     }
+
+    fetch("/url/short", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ url: url })
+    })
+    .then(res => res.text())
+    .then(code => {
+        lastShortUrl = window.location.origin + "/url/" + code;
+
+        document.getElementById("codeInput").value = code;
+
+        showResult(
+            `✅ Short URL: <a href="${lastShortUrl}" target="_blank">${lastShortUrl}</a>
+             <br><button class="btn-copy" onclick="copyUrl()">Copy</button>`
+        );
+    })
+    .catch(() => showResult("❌ Error creating URL", "red"));
+}
+
+// UPDATE
+function updateUrl() {
+    let code = document.getElementById("codeInput").value;
+    let url = document.getElementById("urlInput").value;
+
+    fetch("/url/update/" + code, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ url: url })
+    })
+    .then(() => showResult("✅ URL Updated"))
+    .catch(() => showResult("❌ Update failed", "red"));
+}
+
+// DELETE
+function deleteUrl() {
+    let code = document.getElementById("codeInput").value;
+
+    fetch("/url/delete/" + code, {
+        method: "DELETE"
+    })
+    .then(() => showResult("✅ URL Deleted"))
+    .catch(() => showResult("❌ Delete failed", "red"));
+}
+
+// COPY
+function copyUrl() {
+    navigator.clipboard.writeText(lastShortUrl);
+    showResult("📋 Copied to clipboard!");
+}
+
+// RESULT
+function showResult(message, color="green") {
+    let result = document.getElementById("result");
+    result.style.color = color;
+    result.innerHTML = message;
+}
+
 </script>
 
 </body>
